@@ -1,0 +1,866 @@
+/* Jini Phase 0 styles. Transparent canvas, dark disc.
+   NEVER put backdrop-filter on the disc — WebView2 draws a white box. */
+
+:root {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: transparent;
+  overflow: hidden;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  user-select: none;
+}
+
+.shell {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  /* Definite tracks: an auto grid row grows with content, which made
+     .sheet's height:100% resolve against the CONTENT height instead of
+     the window — panels overflowed with no scrollbar. minmax(0,…) also
+     beats the min-content floor. */
+  grid-template-rows: minmax(0, 100%);
+  grid-template-columns: minmax(0, 100%);
+  background: transparent;
+}
+
+/* The disc: a quiet translucent circle with a hairline ring.
+   NO outer box-shadow ever — on a transparent window it floats over the
+   desktop as a shadow artifact (owner 2026-09-17). Depth comes from the
+   inset highlight alone. */
+.disc {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 35% 30%,
+    rgba(80, 85, 100, 0.93),
+    rgba(22, 24, 32, 0.95) 68%
+  );
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  cursor: grab;
+  transition:
+    background 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.disc:hover {
+  background: radial-gradient(
+    circle at 35% 30%,
+    rgba(95, 100, 118, 0.95),
+    rgba(28, 30, 40, 0.97) 68%
+  );
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.disc.dragging {
+  cursor: grabbing;
+  background: radial-gradient(
+    circle at 35% 30%,
+    rgba(100, 105, 125, 0.97),
+    rgba(30, 32, 44, 0.98) 68%
+  );
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+/* Tray open: ring = active (replaces "shadow = depth"). */
+.disc.open {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 0 0 1.5px rgba(129, 140, 248, 0.55);
+}
+
+.disc-ring {
+  position: absolute;
+  inset: 5px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.18);
+}
+
+.disc-core {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(235, 238, 245, 0.8);
+}
+
+/* Tools tray: frosted glass is fine HERE (never on the disc). */
+.tools-tray {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  border-radius: 14px;
+  padding: 12px 12px 10px;
+  gap: 8px;
+  background: rgba(24, 26, 33, 0.72);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.5);
+}
+
+.tray-scroll {
+  display: flex;
+  gap: 10px;
+  height: 72px;
+  align-items: center;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: auto;
+  padding-bottom: 10px;
+}
+
+.tray-scroll::-webkit-scrollbar {
+  height: 8px;
+}
+
+.tray-scroll::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+.tray-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 4px;
+}
+
+.tray-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.tray-tool {
+  flex: 0 0 52px;
+  height: 52px;
+  width: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(226, 230, 240, 0.82);
+  cursor: pointer;
+  transition: border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease;
+}
+
+.tray-tool:hover {
+  border-color: color-mix(in srgb, var(--glow) 55%, transparent);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--glow) 35%, transparent);
+  transform: translateY(-1px);
+  color: #fff;
+}
+
+.tray-tool .tool-ring {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1.6px solid rgba(226, 230, 240, 0.55);
+}
+
+.tray-name {
+  height: 24px;
+  display: flex;
+  align-items: center;
+  padding: 0 6px;
+  font-size: 12.5px;
+  letter-spacing: 0.01em;
+  color: #e6e9f2;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 7px;
+}
+
+.tray-name.idle {
+  color: rgba(226, 230, 240, 0.55);
+}
+
+/* Workspace sheets (settings / chat / history) — Phase 1. */
+.shell.workspace {
+  background: rgba(20, 22, 28, 0.9);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.sheet {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 12px 14px 14px;
+  gap: 12px;
+}
+
+.sheet-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.sheet-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(230, 233, 242, 0.9);
+}
+
+.model-selector {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 9px;
+  padding: 5px 10px;
+  font-size: 12.5px;
+}
+
+.model-selector span {
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: rgba(129, 140, 248, 0.95);
+}
+
+.model-selector select {
+  background: transparent;
+  border: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.settings {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.settings label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 12.5px;
+  color: rgba(226, 230, 240, 0.75);
+}
+
+.settings input,
+.settings select {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #eef0f6;
+  padding: 8px 10px;
+  font: inherit;
+}
+
+/* Listening bar (specs/phase-2.4 §5). */
+.listening-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: rgba(167, 139, 250, 0.1);
+  border: 1px solid rgba(167, 139, 250, 0.3);
+  border-radius: 10px;
+  flex: 0 0 auto;
+}
+
+.listening-icon {
+  color: #a78bfa;
+  animation: listening-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes listening-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.listening-transcript {
+  flex: 1;
+  margin: 0;
+  color: #94a3b8;
+  font-size: 14px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.settings-actions {
+  display: flex;
+  gap: 10px;
+}
+
+/* AI tools master switch (specs/phase-2.3 §10.2). */
+.settings-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0 2px;
+}
+
+.settings-toggle-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 12.5px;
+  color: rgba(226, 230, 240, 0.75);
+}
+
+.settings-toggle-text strong {
+  color: rgba(235, 238, 245, 0.9);
+  font-weight: 600;
+}
+
+.switch {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 22px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.06);
+  padding: 0;
+  cursor: pointer;
+  position: relative;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.switch .knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgba(226, 230, 240, 0.75);
+  transition: transform 120ms ease, background 120ms ease;
+}
+
+.switch.on {
+  background: rgba(129, 140, 248, 0.55);
+  border-color: rgba(129, 140, 248, 0.8);
+}
+
+.switch.on .knob {
+  transform: translateX(18px);
+  background: #fff;
+}
+
+button.ghost {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: rgba(226, 230, 240, 0.85);
+  border-radius: 8px;
+  padding: 7px 13px;
+  font: inherit;
+  cursor: pointer;
+}
+
+button.ghost:hover {
+  border-color: rgba(129, 140, 248, 0.5);
+}
+
+.settings-actions button:not(.ghost),
+.ask-actions button:not(.ghost) {
+  background: rgba(129, 140, 248, 0.9);
+  border: none;
+  color: #12141b;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 7px 16px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.settings-actions button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.status.ok {
+  color: #4ade80;
+  font-size: 12.5px;
+  margin: 0;
+}
+
+.status.err {
+  color: #f87171;
+  font-size: 12.5px;
+  margin: 0;
+}
+
+.hint {
+  color: rgba(226, 230, 240, 0.55);
+  font-size: 12.5px;
+}
+
+/* Chat */
+.check-again-bar {
+  display: flex;
+  flex: 0 0 auto;
+}
+
+.check-again-bar button {
+  width: 100%;
+  border-color: rgba(34, 211, 238, 0.35);
+  color: rgba(165, 243, 252, 0.9);
+}
+
+.check-again-bar button:hover:not(:disabled) {
+  border-color: rgba(34, 211, 238, 0.7);
+}
+
+.check-again-bar button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.response-panel {
+  flex: 1;
+  /* Without this, a long answer grows the panel past the window instead
+     of scrolling inside it (flex items refuse to shrink below content). */
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-right: 4px;
+}
+
+.messages {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Action confirmation cards (specs/phase-2.6 §2d) — yellow, distinct
+   from the gray tool cards. */
+.confirm-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(250, 204, 21, 0.5);
+  background: rgba(250, 204, 21, 0.1);
+  margin: 4px 0;
+}
+
+.confirm-card.pending {
+  border-color: rgba(250, 204, 21, 0.7);
+  background: rgba(250, 204, 21, 0.15);
+}
+
+.confirm-card.resolved.done {
+  border-color: rgba(74, 222, 128, 0.4);
+  background: rgba(74, 222, 128, 0.08);
+}
+
+.confirm-card.resolved.declined {
+  border-color: rgba(148, 163, 184, 0.3);
+  background: rgba(148, 163, 184, 0.06);
+}
+
+.confirm-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.confirm-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 2px;
+}
+
+.confirm-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #fbbf24;
+}
+
+.confirm-desc {
+  font-size: 11px;
+  color: #94a3b8;
+  word-break: break-word;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.confirm-yes {
+  padding: 4px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 5px;
+  background: rgba(250, 204, 21, 0.9);
+  color: #0f172a;
+  border: none;
+  cursor: pointer;
+}
+
+.confirm-yes:hover:not(:disabled) {
+  background: #fbbf24;
+}
+
+.confirm-yes:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.confirm-no {
+  font-size: 11px;
+  padding: 4px 10px;
+}
+
+/* Agent tool cards (specs/phase-2.3 §12.3). */
+.tool-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tool-card {
+  margin: 2px 0;
+  border-radius: 6px;
+  background: #1e1e2e;
+  border: 1px solid #2e2e3e;
+  font-size: 12px;
+}
+
+.tool-card.running {
+  border-color: #4a4a6a;
+}
+
+.tool-card.done {
+  border-color: #2e2e3e;
+  opacity: 0.85;
+}
+
+.tool-card-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #a0a0c0;
+  text-align: left;
+  font: inherit;
+}
+
+.tool-icon {
+  font-size: 11px;
+  opacity: 0.6;
+}
+
+.tool-label {
+  flex: 1;
+}
+
+.tool-chevron {
+  font-size: 9px;
+  opacity: 0.5;
+}
+
+.tool-card-body {
+  padding: 0 8px 8px;
+  color: #7070a0;
+}
+
+.tool-args,
+.tool-result {
+  margin: 4px 0 0;
+  padding: 4px 6px;
+  background: #12121e;
+  border-radius: 4px;
+  white-space: pre-wrap;
+  word-break: break-all;
+  font-size: 11px;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.bubble {
+  max-width: 88%;
+  padding: 9px 13px;
+  border-radius: 12px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.bubble.user {
+  align-self: flex-end;
+  background: rgba(129, 140, 248, 0.22);
+  border: 1px solid rgba(129, 140, 248, 0.35);
+}
+
+.bubble.assistant {
+  align-self: flex-start;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.ctx-flag {
+  display: block;
+  font-size: 11px;
+  opacity: 0.7;
+  margin-bottom: 3px;
+}
+
+.caret {
+  align-self: flex-start;
+  width: 8px;
+  height: 15px;
+  background: rgba(129, 140, 248, 0.9);
+  animation: blink 0.9s steps(2) infinite;
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+.stream-actions {
+  display: flex;
+  justify-content: center;
+}
+
+.ask-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ask-bar textarea {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: #eef0f6;
+  padding: 10px 12px;
+  font: inherit;
+  resize: none;
+}
+
+.ask-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ask-actions button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.clipboard-preview {
+  border: 1px solid rgba(52, 211, 153, 0.35);
+  background: rgba(52, 211, 153, 0.08);
+  border-radius: 10px;
+  padding: 8px 11px;
+  font-size: 12px;
+}
+
+.clipboard-label {
+  display: block;
+  color: #34d399;
+  font-weight: 600;
+  margin-bottom: 3px;
+  font-size: 11px;
+  letter-spacing: 0.03em;
+}
+
+.clipboard-preview p {
+  margin: 0 0 6px;
+  color: rgba(226, 230, 240, 0.8);
+  white-space: pre-wrap;
+}
+
+/* History */
+.history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow-y: auto;
+}
+
+.history-item {
+  display: flex;
+  gap: 6px;
+  align-items: stretch;
+}
+
+.history-open {
+  flex: 1;
+  text-align: left;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: inherit;
+  border-radius: 9px;
+  padding: 9px 12px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.history-open:hover {
+  border-color: rgba(129, 140, 248, 0.5);
+}
+
+.history-title {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 13px;
+}
+
+.history-delete {
+  border-radius: 9px;
+}
+
+/* Region selection overlay (Phase 2.1). */
+.snip-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.25);
+  cursor: crosshair;
+  z-index: 50;
+}
+
+.snip-rect {
+  position: absolute;
+  border: 1.5px solid rgba(129, 140, 248, 0.95);
+  background: rgba(129, 140, 248, 0.08);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4);
+}
+
+.snip-size {
+  position: absolute;
+  top: -22px;
+  left: 0;
+  font-size: 11px;
+  color: #c7cdf8;
+  background: rgba(15, 16, 22, 0.85);
+  padding: 1px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.snip-hint {
+  position: absolute;
+  left: 50%;
+  top: 18px;
+  transform: translateX(-50%);
+  font-size: 13px;
+  color: rgba(230, 233, 242, 0.9);
+  background: rgba(15, 16, 22, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 6px 14px;
+  border-radius: 8px;
+}
+
+/* Camera chooser in the tray name bar. */
+.tray-chooser {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  width: 100%;
+}
+
+.tray-chooser button:not(.ghost) {
+  flex: 1;
+  background: rgba(129, 140, 248, 0.25);
+  border: 1px solid rgba(129, 140, 248, 0.45);
+  color: #dfe3fb;
+  border-radius: 6px;
+  padding: 2px 6px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.tray-chooser button.ghost {
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+/* Screenshot thumbnail inside a chat bubble. */
+.bubble-image {
+  display: block;
+  max-width: 100%;
+  max-height: 190px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  margin-bottom: 6px;
+}
+
+/* Snip box adjust stage: handles + confirm buttons. */
+.snip-handle {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  background: #eef0f6;
+  border: 1px solid rgba(129, 140, 248, 0.9);
+  z-index: 2;
+}
+
+.snip-confirm {
+  position: absolute;
+  bottom: -40px;
+  right: 0;
+  display: flex;
+  gap: 6px;
+}
+
+.snip-confirm button {
+  font: inherit;
+  font-size: 12.5px;
+  border-radius: 7px;
+  padding: 4px 12px;
+  cursor: pointer;
+}
+
+.snip-confirm button.ok {
+  background: rgba(129, 140, 248, 0.95);
+  border: none;
+  color: #12141b;
+  font-weight: 600;
+}
+
+.snip-confirm button.ghost {
+  background: rgba(15, 16, 22, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #e6e9f2;
+}

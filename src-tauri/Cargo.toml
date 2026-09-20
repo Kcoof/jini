@@ -1,0 +1,62 @@
+[package]
+name = "jini"
+version = "0.1.0"
+description = "Floating Windows AI secretary overlay"
+authors = ["you"]
+edition = "2021"
+# `cargo run` (tauri dev) must keep launching the GUI app now that the
+# jini-mcp binary exists too.
+default-run = "jini"
+
+[lib]
+name = "jini_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-global-shortcut = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+reqwest = { version = "0.12", default-features = false, features = ["json", "stream", "rustls-tls"] }
+rusqlite = { version = "0.32", features = ["bundled"] }
+keyring = { version = "3", features = ["windows-native"] }
+arboard = "3"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "sync"] }
+futures-util = "0.3"
+uuid = { version = "1", features = ["v4"] }
+thiserror = "2"
+image = { version = "0.25", default-features = false, features = ["png"] }
+windows = { version = "0.58", features = [
+  "Win32_Foundation",
+  "Win32_Graphics_Gdi",
+  "Win32_UI_WindowsAndMessaging",
+  "Win32_System_Threading",
+  "Win32_System_ProcessStatus",
+  "Win32_Media_Speech",
+  "Win32_System_Com",
+  "Win32_System_Memory",
+  "Win32_Security",
+  "Win32_UI_Shell",
+  "Win32_UI_Input_KeyboardAndMouse",
+  "Win32_UI_Accessibility",
+  "Foundation",
+  "Foundation_Collections",
+  "Media_SpeechRecognition",
+] }
+chrono = { version = "0.4", features = ["clock"] }
+rmcp = { version = "3.4", features = ["server", "transport-io", "macros", "schemars"] }
+
+# MCP stdio server binary (specs/phase-2.3b): standalone, no Tauri app.
+[[bin]]
+name = "jini-mcp"
+path = "src/bin/mcp.rs"
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 3
+panic = "abort"
+strip = true
