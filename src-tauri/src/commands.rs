@@ -71,6 +71,11 @@ pub fn save_settings(
             *guard = on;
         }
     }
+    if let Some(on) = settings.actions_enabled {
+        if let Ok(mut guard) = state.actions_enabled.lock() {
+            *guard = on;
+        }
+    }
     get_settings(state)
 }
 

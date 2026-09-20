@@ -1,4 +1,4 @@
-//! jini-mcp: MCP stdio server exposing Thuki's 6 read-only tools
+//! jini-mcp: MCP stdio server exposing Jini's 6 read-only tools
 //! (specs/phase-2.3b). Launched by Claude Desktop / ZCode; runs standalone
 //! with its own tokio runtime — no Tauri app, no AppState, no DB.
 //! All logs go to stderr so stdout stays clean JSON-RPC.
@@ -43,7 +43,7 @@ async fn run_tool(name: &str, args: serde_json::Value) -> Result<CallToolResult,
 
 #[tool_router]
 impl JiniMcpServer {
-    #[tool(description = "Capture a screenshot of the primary monitor or a sub-region. Returns a PNG data URL string. Also saves to Pictures\\Thuki and copies to clipboard.")]
+    #[tool(description = "Capture a screenshot of the primary monitor or a sub-region. Returns a PNG data URL string. Also saves to Pictures\\Jini and copies to clipboard.")]
     async fn capture_screen(
         &self,
         Parameters(CaptureScreenParams { region }): Parameters<CaptureScreenParams>,
